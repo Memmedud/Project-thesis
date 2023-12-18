@@ -1,0 +1,154 @@
+---
+home: "{{ home_dir }}"
+logging:
+  level: DEBUG
+  to_file: false
+  rotate: false
+cleanup:
+  auto: true
+  keep: 5
+paths:
+  deps: deps
+  logs: logs
+  results: results
+  temp: temp
+  models:
+    - "{{ home_dir }}/models"
+repos:
+  mlif:
+    url: "https://github.com/tum-ei-eda/mlonmcu-sw.git"
+    ref: {{ mlif_ref }}
+{% if enable_tflm | int %}
+  tensorflow:
+    url: "https://github.com/tensorflow/tflite-micro.git"
+    ref: {{ tflm_ref }}
+{% endif %}
+{% if enable_tvm | int %}
+  tvm:
+    url: "https://github.com/apache/tvm.git"
+    ref: {{ tvm_ref }}
+{% endif %}
+{% if enable_spike | int %}
+  spike:
+    url: "https://github.com/riscv-software-src/riscv-isa-sim.git"
+    ref: {{ spike_ref }}
+  spikepk:
+    url: "https://github.com/riscv-software-src/riscv-pk.git"
+    ref: {{ spikepk_ref }}
+{% endif %}
+{% if enable_etiss | int %}
+  etiss:
+    url: "https://github.com/tum-ei-eda/etiss.git"
+    ref: {{ etiss_ref }}
+{% endif %}
+frameworks:
+{% if enable_tflm | int %}
+  tflm:
+    enabled: true
+    backends:
+      default: tflmi
+      tflmi:
+        enabled: true
+    features:
+      muriscvnn: true
+{% endif %}
+{% if enable_tvm  | int %}
+  tvm:
+    enabled: true
+    backends:
+      default: tvmaotplus
+      tvmaot:
+        enabled: true
+        features:
+          unpacked_api: true
+          usmp: true
+      tvmaotplus:
+        enabled: true
+        features: []
+    features:
+      muriscvnnbyoc: true
+{% endif %}
+frontends:
+  tflite:
+    enabled: true
+    features:
+      validate: true
+platforms:
+  mlif:
+    enabled: true
+    features:
+      debug: true
+      validate: true
+targets:
+  default: host_x86
+  host_x86:
+    enabled: true
+{% if enable_etiss | int %}
+  etiss_pulpino:
+    enabled: true
+{% endif %}
+{% if enable_spike | int %}
+  spike:
+    enabled: true
+    features:
+{% if enable_pext | int %}
+      pext: true
+{% endif %}
+{% if enable_vext | int %}
+      vext: true
+{% endif %}
+{% endif %}
+{% if enable_ovpsim | int %}
+  ovpsim:
+    enabled: true
+    features:
+{% if enable_pext | int %}
+      pext: true
+{% endif %}
+{% if enable_vext | int %}
+      vext: true
+{% endif %}
+{% endif %}
+postprocesses:
+  use: []
+toolchains:
+  gcc: true
+  llvm: false
+vars:
+  # general
+  runs_per_stage: true
+
+  # muriscvnn
+  muriscvnn.src_dir: "{{ home_dir }}/../../.."
+  muriscvnn.skip_lib: true
+
+  # frameworks
+{% if enable_tvm | int and prebuilt_tvm | int %}
+  tvm.use_tlcpack: true
+{% endif %}
+
+  # toolchain
+  # riscv_gcc.name: "riscv64-unknown-elf"
+  riscv_gcc.install_dir_default: "{{ home_dir }}/../../../Toolchain/rv32gc"
+{% if enable_vext | int %}
+  riscv_gcc.install_dir_vext: "{{ home_dir }}/../../../Toolchain/rv32gcv"
+{% endif %}
+{% if enable_pext | int %}
+  riscv_gcc.install_dir_pext: "{{ home_dir }}/../../../Toolchain/rv32gcp"
+{% endif %}
+
+  # simulators
+{% if enable_etiss | int and local_etiss | int %}
+  etiss.src_dir: "{{ home_dir }}/../../../Sim/ETISS/etiss-master"
+  etiss.install_dir: "{{ home_dir }}/../../../Sim/ETISS/etiss-master/build/install"
+  etissvp.exe: "{{ home_dir }}/../../../Sim/ETISS/etiss-master/build/install/bin/bare_etiss_processor"
+  etissvp.script: "{{ home_dir }}/../../../Sim/ETISS/etiss-master/build/install/bin/run_helper.sh"
+{% endif %}
+{% if enable_ovpsim | int and local_ovpsim | int %}
+  ovpsim.exe: "{{ home_dir }}/../../../Sim/OVPsim/bin/riscvOVPsimPlus"
+{% endif %}
+{% if enable_spike | int and local_spike | int %}
+  spike.exe: "{{ home_dir }}/../../../Sim/Spike/bin/spike"
+  spike.pk: "{{ home_dir }}/../../../Sim/Spike/bin/pk"
+{% endif %}
+  muriscvnn.lib: ""  # Will not be used
